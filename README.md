@@ -24,3 +24,7 @@ In the project directory, you can run:
 ### Executing program
 
 ##### `./test`
+
+### Executing the drawing program
+
+##### `python3 ./draw.py`
