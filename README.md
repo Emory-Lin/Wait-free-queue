@@ -4,7 +4,7 @@ We compare the speed of three many-to-one communication channels which are obstr
 
 ## Description
 
-We presents the  design of a concurrent FIFO queue based on fetch-and-store and compare-and-swap which can be used in the many-to-one communications. It  
+We present the  design of a concurrent FIFO queue based on fetch-and-store and compare-and-swap which can be used in the many-to-one communications. It  
 
 - guarantees FIFO ordering of lock acquisitions;
 - guarantees that every call finishes its execution in a finite number of steps
