@@ -12,9 +12,8 @@ public:
 		tail = nullptr;
 	}
 };
-Treiber * t;
 
-void TreiberEnqueue(int val)
+void TreiberEnqueue(Treiber* t, int val)
 {
 	qnode * newHead = new qnode(val);
 	qnode* oldHead;
@@ -22,10 +21,10 @@ void TreiberEnqueue(int val)
 	{
 		oldHead = t -> head;	
 		newHead -> next = oldHead; 
-	} while (t -> head.compare_exchange_strong(oldHead, newHead) == false);
+	} while (t -> head.compare_exchange_weak(oldHead, newHead, std::memory_order_release, std::memory_order_relaxed) == false);
 }
 
-qnode *TreiberDequeue()
+qnode *TreiberDequeue(Treiber* t)
 {
 	qnode *oldHead, *newHead;
 	do
@@ -34,22 +33,9 @@ qnode *TreiberDequeue()
 		if(oldHead == nullptr)
 			return nullptr;
 		newHead = oldHead -> next;
-	} while (t -> head.compare_exchange_strong(oldHead, newHead) == false);
+	} while (t -> head.compare_exchange_weak(oldHead, newHead, std::memory_order_release, std::memory_order_relaxed) == false);
 	// cout << "Dequeu number is " << oldHead -> value << endl; 
 	return oldHead;
 }
 
-void show_treiber()
-{
-	qnode *temp = t -> head;
-	int number = 0;
-	while (temp)
-	{
-		number++;
-		cout << temp->value << "->";
-		temp = temp->next;
-	}
-	cout << endl;
-	cout << "we have total " << number << " items in the queue" << endl;
-}
 

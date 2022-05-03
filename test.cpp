@@ -6,161 +6,155 @@
 #include "WaitFreeQueue.cpp"
 #include <chrono>
 #include <atomic>
+#include <vector>
 
-#include "BlockQueue.cpp"
+#include "MSQueue.cpp"
 #include "TreiberStack.cpp"
 
-
 using namespace std;
-double enqueue_dequeue_wait_free(int round)
+WaitFreeQueue *Q;
+MSQueue *M;
+Treiber *T;
+double enqueue_dequeue_wait_free(int round, int thread_cnt)
 {
-    int first = round / 3;
-    int second = round / 3 * 2;
+    thread_cnt--;
+    int num = round / thread_cnt;
     auto start = std::chrono::steady_clock::now();
-    #pragma omp parallel  num_threads(4) 
+#pragma omp parallel num_threads(thread_cnt + 1)
     {
         int thread_number = omp_get_thread_num();
-        if(thread_number == 0)
-        { 
+        if (thread_number == 0)
+        {
             int number = 0;
-            while(number < round)
+            while (number < round)
             {
-                qnode* q = dequeue_wait_free();
-                if(q != nullptr)
+                qnode *q = dequeue_wait_free(Q);
+                if (q != nullptr)
                 {
                     number++;
                 }
             }
         }
-        else if(thread_number == 1)
+        else
         {
-            for(int i = 0; i < first; i++)
-                enqueue(i);        
-        }
-        else if(thread_number == 2)
-        {
-            for(int i = first; i < second; i++)
-                enqueue(i);      
-        }
-        else 
-        {
-            for(int i = second; i < round; i++)
-                enqueue(i); 
+            // cout << thread_number << endl;
+            if (thread_number != thread_cnt)
+            {
+                for (int i = (thread_cnt - 1) * num; i < thread_cnt * num; i++)
+                    enqueue(Q, i);
+            }
+            else
+            {
+                for (int i = (thread_cnt - 1) * num; i < round; i++)
+                    enqueue(Q, i);
+            }
         }
     }
     // cout << "Finsh" << endl;
     auto end = std::chrono::steady_clock::now();
-    std::chrono::duration<double> elapsed_seconds = end-start;
+    std::chrono::duration<double> elapsed_seconds = end - start;
     // std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
-    return elapsed_seconds.count(); 
+    return elapsed_seconds.count();
 }
-double enqueue_dequeue_treiber(int round)
+double enqueue_dequeue_treiber(int round, int thread_cnt)
 {
-    int first = round / 3;
-    int second = round / 3 * 2;
+    thread_cnt--;
+    int num = round / thread_cnt;
     auto start = std::chrono::steady_clock::now();
-    #pragma omp parallel  num_threads(4) 
+#pragma omp parallel num_threads(thread_cnt + 1)
     {
         int thread_number = omp_get_thread_num();
-        if(thread_number == 0)
-        { 
+        if (thread_number == 0)
+        {
             int number = 0;
-            while(number < round)
+            while (number < round)
             {
-                qnode* q = TreiberDequeue();
-                if(q != nullptr)
+                qnode *q = TreiberDequeue(T);
+                if (q != nullptr)
                 {
                     number++;
                 }
             }
         }
-        else if(thread_number == 1)
+        else
         {
-            for(int i = 0; i < first; i++)
-                TreiberEnqueue(i);        
-        }
-        else if(thread_number == 2)
-        {
-            for(int i = first; i < second; i++)
-                TreiberEnqueue(i);      
-        }
-        else 
-        {
-            for(int i = second; i < round; i++)
-                TreiberEnqueue(i); 
+            if (thread_number != thread_cnt)
+            {
+                for (int i = (thread_cnt - 1) * num; i < thread_cnt * num; i++)
+                    TreiberEnqueue(T, i);
+            }
+            else
+            {
+                for (int i = (thread_cnt - 1) * num; i < round; i++)
+                    TreiberEnqueue(T, i);
+            }
         }
     }
     // cout << "Finsh" << endl;
     auto end = std::chrono::steady_clock::now();
-    std::chrono::duration<double> elapsed_seconds = end-start;
+    std::chrono::duration<double> elapsed_seconds = end - start;
     // std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
-    return elapsed_seconds.count(); 
+    return elapsed_seconds.count();
 }
-double enqueue_dequeue_block(int round)
+double enqueue_dequeue_MS(int round, int thread_cnt)
 {
-        int first = round / 3;
-    int second = round / 3 * 2;
+    thread_cnt--;
+    int num = round / thread_cnt;
     auto start = std::chrono::steady_clock::now();
-    #pragma omp parallel  num_threads(4) 
+#pragma omp parallel num_threads(thread_cnt + 1)
     {
         int thread_number = omp_get_thread_num();
-        if(thread_number == 0)
-        { 
+        if (thread_number == 0)
+        {
             int number = 0;
-            while(number < round)
+            while (number < round)
             {
-                qnode* q = BlockDequeue();
-                if(q != nullptr)
+                int temp;
+                msnode *q = MSDequeue(M, temp);
+                if (q != nullptr)
                 {
                     number++;
                 }
             }
         }
-        else if(thread_number == 1)
+        else
         {
-            for(int i = 0; i < first; i++)
-                BlockEnqueue(i);        
-        }
-        else if(thread_number == 2)
-        {
-            for(int i = first; i < second; i++)
-                BlockEnqueue(i);      
-        }
-        else 
-        {
-            for(int i = second; i < round; i++)
-                BlockEnqueue(i); 
+            if (thread_number != thread_cnt)
+            {
+                for (int i = (thread_cnt - 1) * num; i < thread_cnt * num; i++)
+                    MSEnqueue(M, i);
+            }
+            else
+            {
+                for (int i = (thread_cnt - 1) * num; i < round; i++)
+                    MSEnqueue(M, i);
+            }
         }
     }
     // cout << "Finsh" << endl;
     auto end = std::chrono::steady_clock::now();
-    std::chrono::duration<double> elapsed_seconds = end-start;
+    std::chrono::duration<double> elapsed_seconds = end - start;
     // std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
-    return elapsed_seconds.count(); 
-}
-void core(int round)
-{
-    double first, second, third;
-    for(int i = 0; i < 10; i++)
-        first += enqueue_dequeue_wait_free(round);
-    cout << "wait-free use " << first / 10 << endl;
-    for(int i = 0; i < 10; i++)
-        second += enqueue_dequeue_treiber(round);
-    cout << "treiber use " << second / 10 << endl;
-    for(int i = 0; i < 10; i++)
-        third += enqueue_dequeue_block(round);
-    cout << "block use " << third / 10 << endl;
+    return elapsed_seconds.count();
 }
 int main()
 {
-    q = new NewQueue();
-    t = new Treiber();
-    b = new Block();
-    // no_data_race = q -> tail; 
-    // enqueue_dequeue_wait_free(400);
-    for(int i = 100000; i < 1000001; i += 100000)
+    Q = new WaitFreeQueue();
+    T = new Treiber();
+    M = new MSQueue();
+    msnode *node_temp = new msnode(-1);
+    pointer *temp = new pointer(node_temp, 0);
+    M->head = M->tail = temp;
+    // cout << "wait-free use " << enqueue_dequeue_wait_free(50000000, 2) << endl;
+
+    // cout << "treiber use " << enqueue_dequeue_treiber(50000000, 90) << endl;
+    for (int i = 2; i <= 128; i *= 2)
     {
-        cout << "Round " << i << endl; 
-        core(i);
+        count = 0;
+        cout << enqueue_dequeue_wait_free(50000000, i) << ",";
+        cout << "count" << count / (double)50000000 << endl; 
     }
+    cout << endl;
+
+    // enqueue_dequeue_wait_free(1000, 4);
 }
